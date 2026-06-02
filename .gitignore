@@ -1,0 +1,5 @@
+**/build/
+developer_key.der
+developer_key.pem
+.vscode/
+preview/

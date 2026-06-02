@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<iq:manifest xmlns:iq="http://www.garmin.com/xml/connectiq" version="4">
+    <iq:application id="a3421feed289106a538cb9547ab12095" type="datafield"
+        entry="ChartsApp" launcherIcon="@Drawables.LauncherIcon"
+        name="@Strings.AppName" minSdkVersion="3.1.0">
+        <iq:products>
+            <iq:product id="edge1030plus" />
+        </iq:products>
+        <iq:permissions>
+            <iq:uses-permission id="UserProfile" />
+        </iq:permissions>
+        <iq:languages>
+            <iq:language>eng</iq:language>
+            <iq:language>deu</iq:language>
+        </iq:languages>
+        <iq:barrels>
+        </iq:barrels>
+    </iq:application>
+</iq:manifest>
