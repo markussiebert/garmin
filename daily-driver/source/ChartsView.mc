@@ -183,8 +183,8 @@ class ChartsView extends WatchUi.DataField {
         dc.setColor(_fgColor, bgColor);
         dc.clear();
 
-        var barW = 28;
-        var gaugeH = 155;
+        var barW = _width / 10;
+        var gaugeH = _height / 3;
 
         // Draw power bar (left)
         var pwrColors = _isDark ? _powerZoneColorsDark : _powerZoneColors;
@@ -211,12 +211,13 @@ class ChartsView extends WatchUi.DataField {
             _avgHr, _hrZoneBounds, _hrZoneRatios);
 
         // Speed gauge centered
-        var gx = barW + 2;
-        var gw = _width - barW * 2 - 4;
-        drawSpeedGauge(dc, gx, 4, gw, gaugeH);
+        var gap = _width / 140;
+        var gx = barW + gap;
+        var gw = _width - barW * 2 - gap * 2;
+        drawSpeedGauge(dc, gx, gap, gw, gaugeH);
 
         // Center data panel below gauge
-        drawDataPanel(dc, barW, gaugeH + 6, _width - barW * 2, _height - gaugeH - 6);
+        drawDataPanel(dc, barW, gaugeH + gap, _width - barW * 2, _height - gaugeH - gap);
     }
 
     private function speedToArcRatio(spd as Float) as Float {
@@ -240,8 +241,9 @@ class ChartsView extends WatchUi.DataField {
         x0 as Number, y0 as Number, w as Number, h as Number
     ) as Void {
         var cx = x0 + w / 2;
-        var r = (w / 2) - 16;
-        var cy = y0 + r + 6;
+        var arcMargin = w / 14;
+        var r = (w / 2) - arcMargin;
+        var cy = y0 + r + arcMargin / 3;
 
         var avg = _avgSpeed;
         if (avg < 5.0f) { avg = 25.0f; }
@@ -249,44 +251,47 @@ class ChartsView extends WatchUi.DataField {
         if (maxScale < avg * 1.3f) { maxScale = avg * 1.3f; }
 
         // Background arc
-        dc.setPenWidth(20);
+        var arcPen = w / 12;
+        dc.setPenWidth(arcPen);
         dc.setColor(_isDark ? 0x1A1A1A : 0xE0E0E0, Graphics.COLOR_TRANSPARENT);
         dc.drawArc(cx, cy, r, Graphics.ARC_CLOCKWISE, 180, 0);
         dc.setPenWidth(1);
 
         // Dot showing current speed position on the arc
+        var dotR = w / 20;
         var speedRatio = speedToArcRatio(_currentSpeed);
         if (speedRatio > 0.0f) {
             var dotAngle = Math.PI + (Math.PI * speedRatio);
             var dotX = cx + (r * Math.cos(dotAngle)).toNumber();
             var dotY = cy + (r * Math.sin(dotAngle)).toNumber();
             dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_TRANSPARENT);
-            dc.fillCircle(dotX, dotY, 12);
+            dc.fillCircle(dotX, dotY, dotR);
         }
 
         // Avg tick at top
+        var tickH = _height / 60;
         dc.setColor(_fgColor, Graphics.COLOR_TRANSPARENT);
         dc.setPenWidth(2);
-        dc.drawLine(cx, cy - r + 8, cx, cy - r - 8);
+        dc.drawLine(cx, cy - r + tickH, cx, cy - r - tickH);
         dc.setPenWidth(1);
 
         // 0 below left end of arc
         dc.setColor(_dimColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx - r, cy + 14, Graphics.FONT_XTINY, "0", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(cx - r, cy + arcMargin, Graphics.FONT_XTINY, "0", Graphics.TEXT_JUSTIFY_CENTER);
 
         // Top speed below right end of arc
-        dc.drawText(cx + r, cy + 14, Graphics.FONT_XTINY,
+        dc.drawText(cx + r, cy + arcMargin, Graphics.FONT_XTINY,
             maxScale.toNumber().toString(), Graphics.TEXT_JUSTIFY_CENTER);
 
         // Current speed - big number
         var speedStr = _currentSpeed > 0.1f ? _currentSpeed.format("%.1f") : "--";
         dc.setColor(_fgColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, cy - 28, Graphics.FONT_NUMBER_THAI_HOT, speedStr, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(cx, cy - h / 5, Graphics.FONT_NUMBER_THAI_HOT, speedStr, Graphics.TEXT_JUSTIFY_CENTER);
 
         // Avg speed above current speed (smaller)
         if (_avgSpeed > 0.0f) {
             dc.setColor(_fgColor, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, cy - 76, Graphics.FONT_NUMBER_MILD, _avgSpeed.format("%.1f"), Graphics.TEXT_JUSTIFY_CENTER);
+            dc.drawText(cx, cy - h / 2, Graphics.FONT_NUMBER_MILD, _avgSpeed.format("%.1f"), Graphics.TEXT_JUSTIFY_CENTER);
         }
     }
 
@@ -297,110 +302,114 @@ class ChartsView extends WatchUi.DataField {
         var cx = x0 + w / 2;
         var leftCol = x0 + w / 4;
         var rightCol = x0 + w * 3 / 4;
-        var rowH = 70;
-        var pad = 8;
+        var rowH = h / 5;
+        var smallRowH = h / 6;
+        var pad = w / 30;
+        var rowGap = h / 50;
+        var captionOff = (_height > 600) ? 0 : -3;
+        var numOff = h / 22;
+        var divColor = _isDark ? 0x222244 : 0xCCCCCC;
 
         // === ROW 1: Power & HR ===
-        var r1y = y0 + 4;
+        var r1y = y0 + rowGap;
 
         dc.setColor(_dimColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(leftCol, r1y - 4, Graphics.FONT_XTINY, "POWER", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(leftCol, r1y + captionOff, Graphics.FONT_XTINY, "POWER", Graphics.TEXT_JUSTIFY_CENTER);
         dc.setColor(_fgColor, Graphics.COLOR_TRANSPARENT);
         var pwrVal = _power5s.getAverage();
         var pwrStr = pwrVal > 0.0f ? pwrVal.toNumber().toString() : "--";
-        dc.drawText(leftCol, r1y + 14, Graphics.FONT_NUMBER_HOT, pwrStr, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(leftCol, r1y + numOff, Graphics.FONT_NUMBER_HOT, pwrStr, Graphics.TEXT_JUSTIFY_CENTER);
 
-        // Vertical divider
-        dc.setColor(_isDark ? 0x222244 : 0xCCCCCC, Graphics.COLOR_TRANSPARENT);
-        dc.drawLine(cx, r1y + 2, cx, r1y + rowH - 2);
+        dc.setColor(divColor, Graphics.COLOR_TRANSPARENT);
+        dc.drawLine(cx, r1y, cx, r1y + rowH);
 
         dc.setColor(_dimColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(rightCol, r1y - 4, Graphics.FONT_XTINY, "HR", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(rightCol, r1y + captionOff, Graphics.FONT_XTINY, "HR", Graphics.TEXT_JUSTIFY_CENTER);
         dc.setColor(_fgColor, Graphics.COLOR_TRANSPARENT);
         var hrVal = _hr3s.getAverage();
         var hrStr = hrVal > 0.0f ? hrVal.toNumber().toString() : "--";
-        dc.drawText(rightCol, r1y + 14, Graphics.FONT_NUMBER_HOT, hrStr, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(rightCol, r1y + numOff, Graphics.FONT_NUMBER_HOT, hrStr, Graphics.TEXT_JUSTIFY_CENTER);
 
         // === Separator ===
-        var sepY = r1y + rowH + 4;
-        dc.setColor(_isDark ? 0x222244 : 0xCCCCCC, Graphics.COLOR_TRANSPARENT);
+        var sepY = r1y + rowH + rowGap;
+        dc.setColor(divColor, Graphics.COLOR_TRANSPARENT);
         dc.drawLine(x0 + pad, sepY, x0 + w - pad, sepY);
 
         // === ROW 2: Avg Power | Avg HR ===
-        var r2y = sepY + 6;
+        var r2y = sepY + rowGap;
 
         dc.setColor(_dimColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(leftCol, r2y - 4, Graphics.FONT_XTINY, "AVG PWR", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(leftCol, r2y + captionOff, Graphics.FONT_XTINY, "AVG PWR", Graphics.TEXT_JUSTIFY_CENTER);
         dc.setColor(_fgColor, Graphics.COLOR_TRANSPARENT);
         var avgPwrStr = _avgPower > 0.0f ? _avgPower.toNumber().toString() : "--";
-        dc.drawText(leftCol, r2y + 14, Graphics.FONT_NUMBER_MILD, avgPwrStr, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(leftCol, r2y + numOff, Graphics.FONT_NUMBER_MILD, avgPwrStr, Graphics.TEXT_JUSTIFY_CENTER);
 
-        dc.setColor(_isDark ? 0x222244 : 0xCCCCCC, Graphics.COLOR_TRANSPARENT);
-        dc.drawLine(cx, r2y + 2, cx, r2y + 44);
+        dc.setColor(divColor, Graphics.COLOR_TRANSPARENT);
+        dc.drawLine(cx, r2y, cx, r2y + smallRowH);
 
         dc.setColor(_dimColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(rightCol, r2y - 4, Graphics.FONT_XTINY, "AVG HR", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(rightCol, r2y + captionOff, Graphics.FONT_XTINY, "AVG HR", Graphics.TEXT_JUSTIFY_CENTER);
         dc.setColor(_fgColor, Graphics.COLOR_TRANSPARENT);
         var avgHrStr = _avgHr > 0.0f ? _avgHr.toNumber().toString() : "--";
-        dc.drawText(rightCol, r2y + 14, Graphics.FONT_NUMBER_MILD, avgHrStr, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(rightCol, r2y + numOff, Graphics.FONT_NUMBER_MILD, avgHrStr, Graphics.TEXT_JUSTIFY_CENTER);
 
         // === Separator ===
-        var sep2Y = r2y + 50;
-        dc.setColor(_isDark ? 0x222244 : 0xCCCCCC, Graphics.COLOR_TRANSPARENT);
+        var sep2Y = r2y + smallRowH;
+        dc.setColor(divColor, Graphics.COLOR_TRANSPARENT);
         dc.drawLine(x0 + pad, sep2Y, x0 + w - pad, sep2Y);
 
         // === ROW 3: NP | Cadence ===
-        var r3y = sep2Y + 6;
+        var r3y = sep2Y + rowGap;
 
         dc.setColor(_dimColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(leftCol, r3y - 4, Graphics.FONT_XTINY, "NORM PWR", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(leftCol, r3y + captionOff, Graphics.FONT_XTINY, "NORM PWR", Graphics.TEXT_JUSTIFY_CENTER);
         dc.setColor(_fgColor, Graphics.COLOR_TRANSPARENT);
         var npVal = _np.getNP();
         var npStr = npVal > 0.0f ? npVal.toNumber().toString() : "--";
-        dc.drawText(leftCol, r3y + 14, Graphics.FONT_NUMBER_MILD, npStr, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(leftCol, r3y + numOff, Graphics.FONT_NUMBER_MILD, npStr, Graphics.TEXT_JUSTIFY_CENTER);
 
-        dc.setColor(_isDark ? 0x222244 : 0xCCCCCC, Graphics.COLOR_TRANSPARENT);
-        dc.drawLine(cx, r3y + 2, cx, r3y + 44);
+        dc.setColor(divColor, Graphics.COLOR_TRANSPARENT);
+        dc.drawLine(cx, r3y, cx, r3y + smallRowH);
 
         dc.setColor(_dimColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(rightCol, r3y - 4, Graphics.FONT_XTINY, "CADENCE", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(rightCol, r3y + captionOff, Graphics.FONT_XTINY, "CADENCE", Graphics.TEXT_JUSTIFY_CENTER);
         dc.setColor(_fgColor, Graphics.COLOR_TRANSPARENT);
         var cadStr = _cadence > 0.0f ? _cadence.toNumber().toString() : "--";
-        dc.drawText(rightCol, r3y + 14, Graphics.FONT_NUMBER_MILD, cadStr, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(rightCol, r3y + numOff, Graphics.FONT_NUMBER_MILD, cadStr, Graphics.TEXT_JUSTIFY_CENTER);
 
         // === Separator ===
-        var sep3Y = r3y + 50;
-        dc.setColor(_isDark ? 0x222244 : 0xCCCCCC, Graphics.COLOR_TRANSPARENT);
+        var sep3Y = r3y + smallRowH;
+        dc.setColor(divColor, Graphics.COLOR_TRANSPARENT);
         dc.drawLine(x0 + pad, sep3Y, x0 + w - pad, sep3Y);
 
         // === ROW 4: Dist | Elev ===
-        var r4y = sep3Y + 6;
+        var r4y = sep3Y + rowGap;
 
         dc.setColor(_dimColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(leftCol, r4y - 4, Graphics.FONT_XTINY, "DIST", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(leftCol, r4y + captionOff, Graphics.FONT_XTINY, "DIST", Graphics.TEXT_JUSTIFY_CENTER);
         dc.setColor(_fgColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(leftCol, r4y + 14, Graphics.FONT_NUMBER_MILD,
+        dc.drawText(leftCol, r4y + numOff, Graphics.FONT_NUMBER_MILD,
             _distance.format("%.1f"), Graphics.TEXT_JUSTIFY_CENTER);
 
-        dc.setColor(_isDark ? 0x222244 : 0xCCCCCC, Graphics.COLOR_TRANSPARENT);
-        dc.drawLine(cx, r4y + 2, cx, r4y + 44);
+        dc.setColor(divColor, Graphics.COLOR_TRANSPARENT);
+        dc.drawLine(cx, r4y, cx, r4y + smallRowH);
 
         dc.setColor(_dimColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(rightCol, r4y - 4, Graphics.FONT_XTINY, "ELEV", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(rightCol, r4y + captionOff, Graphics.FONT_XTINY, "ELEV", Graphics.TEXT_JUSTIFY_CENTER);
         dc.setColor(_fgColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(rightCol, r4y + 14, Graphics.FONT_NUMBER_MILD,
+        dc.drawText(rightCol, r4y + numOff, Graphics.FONT_NUMBER_MILD,
             _totalAscent.toNumber().toString(), Graphics.TEXT_JUSTIFY_CENTER);
 
         // === Separator ===
-        var sep4Y = r4y + 50;
-        dc.setColor(_isDark ? 0x222244 : 0xCCCCCC, Graphics.COLOR_TRANSPARENT);
+        var sep4Y = r4y + smallRowH;
+        dc.setColor(divColor, Graphics.COLOR_TRANSPARENT);
         dc.drawLine(x0 + pad, sep4Y, x0 + w - pad, sep4Y);
 
         // === ROW 5: Ride | Time ===
-        var r5y = sep4Y + 6;
+        var r5y = sep4Y + rowGap;
 
         dc.setColor(_dimColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(leftCol, r5y - 4, Graphics.FONT_XTINY, "RIDE", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(leftCol, r5y + captionOff, Graphics.FONT_XTINY, "RIDE", Graphics.TEXT_JUSTIFY_CENTER);
         dc.setColor(_fgColor, Graphics.COLOR_TRANSPARENT);
         var hrs = _elapsedTime / 3600;
         var mins = (_elapsedTime % 3600) / 60;
@@ -411,17 +420,17 @@ class ChartsView extends WatchUi.DataField {
         } else {
             elapsedStr = mins + ":" + secs.format("%02d");
         }
-        dc.drawText(leftCol, r5y + 14, Graphics.FONT_NUMBER_MILD, elapsedStr, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(leftCol, r5y + numOff, Graphics.FONT_NUMBER_MILD, elapsedStr, Graphics.TEXT_JUSTIFY_CENTER);
 
-        dc.setColor(_isDark ? 0x222244 : 0xCCCCCC, Graphics.COLOR_TRANSPARENT);
-        dc.drawLine(cx, r5y + 2, cx, r5y + 44);
+        dc.setColor(divColor, Graphics.COLOR_TRANSPARENT);
+        dc.drawLine(cx, r5y, cx, r5y + smallRowH);
 
         dc.setColor(_dimColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(rightCol, r5y - 4, Graphics.FONT_XTINY, "TIME", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(rightCol, r5y + captionOff, Graphics.FONT_XTINY, "TIME", Graphics.TEXT_JUSTIFY_CENTER);
         dc.setColor(_fgColor, Graphics.COLOR_TRANSPARENT);
         var now = Toybox.System.getClockTime();
         var timeStr = now.hour.format("%02d") + ":" + now.min.format("%02d");
-        dc.drawText(rightCol, r5y + 14, Graphics.FONT_NUMBER_MILD, timeStr, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(rightCol, r5y + numOff, Graphics.FONT_NUMBER_MILD, timeStr, Graphics.TEXT_JUSTIFY_CENTER);
     }
 
     private function valueToBarRatio(value as Float, bounds as Array<Number>?, ratios as Array<Float>?) as Float {
@@ -445,8 +454,9 @@ class ChartsView extends WatchUi.DataField {
         bounds as Array<Number>?, ratios as Array<Float>?) as Number {
         var fillRatio = valueToBarRatio(value, bounds, ratios);
         var valY = y0 + h - (fillRatio * h).toNumber();
-        if (valY > y0 + h - 10) { valY = y0 + h - 10; }
-        if (valY < y0 + 10) { valY = y0 + 10; }
+        var clamp = _height / 47;
+        if (valY > y0 + h - clamp) { valY = y0 + h - clamp; }
+        if (valY < y0 + clamp) { valY = y0 + clamp; }
         return valY;
     }
 
@@ -459,8 +469,8 @@ class ChartsView extends WatchUi.DataField {
         if (zoneRatios == null || zoneRatios.size() < 2) { return; }
         var numZones = zoneRatios.size() - 1;
         var isLeft = (x0 < _width / 2);
-        var narrowW = w - 7;
-        var taper = 10;
+        var narrowW = w * 3 / 4;
+        var taper = _height / 47;
 
         // Draw all zones
         for (var z = 0; z < numZones; z++) {
@@ -524,7 +534,7 @@ class ChartsView extends WatchUi.DataField {
             var thY = y0 + h - (thRatio * h).toNumber();
             var mx = isLeft ? x0 + narrowW / 2 : x0 + w - narrowW / 2;
             dc.setColor(_fgColor, Graphics.COLOR_TRANSPARENT);
-            drawStar(dc, mx, thY, 11);
+            drawStar(dc, mx, thY, w * 2 / 5);
         }
     }
 
@@ -536,7 +546,7 @@ class ChartsView extends WatchUi.DataField {
     ) as Void {
         if (value <= 0.0f) { return; }
         var valY = getBarY(y0, h, value, bounds, ratios);
-        var sz = 8;
+        var sz = w * 2 / 7;
         var isLeft = (x0 < _width / 2);
         dc.setColor(_fgColor, Graphics.COLOR_TRANSPARENT);
         var pts = new [3];
@@ -560,8 +570,10 @@ class ChartsView extends WatchUi.DataField {
     ) as Void {
         if (value <= 0.0f) { return; }
         var valY = getBarY(y0, h, value, bounds, ratios);
+        var pen = w / 8;
+        if (pen < 2) { pen = 2; }
         dc.setColor(_fgColor, Graphics.COLOR_TRANSPARENT);
-        dc.setPenWidth(3);
+        dc.setPenWidth(pen);
         dc.drawLine(x0, valY, x0 + w, valY);
         dc.setPenWidth(1);
     }

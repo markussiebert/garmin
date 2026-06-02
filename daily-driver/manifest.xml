@@ -4,7 +4,11 @@
         entry="ChartsApp" launcherIcon="@Drawables.LauncherIcon"
         name="@Strings.AppName" minSdkVersion="3.1.0">
         <iq:products>
+            <iq:product id="edge1030" />
+            <iq:product id="edge1030bontrager" />
             <iq:product id="edge1030plus" />
+            <iq:product id="edge1040" />
+            <iq:product id="edge1050" />
         </iq:products>
         <iq:permissions>
             <iq:uses-permission id="UserProfile" />
